@@ -21,6 +21,17 @@ jobs:
 
       - run: flutter create --platforms=android --org net.hamaniehflash .
 
+      - name: Forcer une version Android récente (compileSdk/targetSdk)
+        run: |
+          for f in android/app/build.gradle.kts android/app/build.gradle; do
+            if [ -f "$f" ]; then
+              sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' "$f"
+              sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 35/' "$f"
+              sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 35/' "$f"
+              sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 35/' "$f"
+            fi
+          done
+
       - run: flutter pub get
       - run: flutter build apk --release
 
