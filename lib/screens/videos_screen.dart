@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -23,11 +23,12 @@ class _VideosScreenState extends State<VideosScreen> {
     _videosFuture = ApiService.instance.getVideos();
   }
 
-  void _openVideo(VideoItem video) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => VideoPlayerScreen(video: video)),
-    );
+  Future<void> _openVideo(VideoItem video) async {
+    // Ouvre la vidéo dans l'application YouTube (ou le navigateur si non installée)
+    final uri = Uri.parse('https://www.youtube.com/watch?v=${video.youtubeId}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   @override
@@ -105,41 +106,6 @@ class _VideoTile extends StatelessWidget {
         title: Text(video.title, maxLines: 2, overflow: TextOverflow.ellipsis),
         subtitle: Text(timeago.format(video.publishedAt, locale: 'fr')),
       ),
-    );
-  }
-}
-
-class VideoPlayerScreen extends StatefulWidget {
-  final VideoItem video;
-  const VideoPlayerScreen({super.key, required this.video});
-
-  @override
-  State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
-}
-
-class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
-  late YoutubePlayerController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = YoutubePlayerController(
-      initialVideoId: widget.video.youtubeId,
-      flags: const YoutubePlayerFlags(autoPlay: true),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.video.title)),
-      body: YoutubePlayer(controller: _controller),
     );
   }
 }
