@@ -21,10 +21,6 @@ dependencies:
   # Gestion d'état simple
   provider: ^6.1.1
 
-  # Notifications push
-  firebase_core: ^2.24.0
-  firebase_messaging: ^14.7.9
-
   # Utilitaires
   cached_network_image: ^3.3.1
   intl: ^0.19.0
