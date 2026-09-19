@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../screens/more_menu_screen.dart';
+import '../screens/notifications_screen.dart';
 
 /// AppBar réutilisée sur tous les écrans : menu ☰, logo, cloche 🔔
 class HFAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -10,10 +12,11 @@ class HFAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      leading: Builder(
-        builder: (context) => IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+      leading: IconButton(
+        icon: const Icon(Icons.menu),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MoreMenuScreen()),
         ),
       ),
       title: Row(
@@ -37,7 +40,11 @@ class HFAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_none),
-          onPressed: onNotificationTap,
+          onPressed: onNotificationTap ??
+              () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                  ),
         ),
       ],
     );

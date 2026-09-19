@@ -31,20 +31,14 @@ class ContactScreen extends StatelessWidget {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.phone, color: AppColors.secondaryBlue),
-                    title: const Text('+225 01 03 57 42 40'),
-                    onTap: () => _launch('tel:+225010357420'),
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.phone, color: AppColors.secondaryBlue),
-                    title: const Text('+225 07 03 22 36 03'),
-                    onTap: () => _launch('tel:+225070322360'),
+                    title: const Text('+225 07 57 44 36 61'),
+                    onTap: () => _launch('tel:+2250757443661'),
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.email, color: AppColors.secondaryBlue),
-                    title: const Text('contact@hamanieh-flash.com'),
-                    onTap: () => _launch('mailto:contact@hamanieh-flash.com'),
+                    title: const Text('hamaniehflashnet@gmail.com'),
+                    onTap: () => _launch('mailto:hamaniehflashnet@gmail.com'),
                   ),
                   const ListTile(
                     contentPadding: EdgeInsets.zero,
