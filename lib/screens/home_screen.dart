@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
 import 'article_detail_screen.dart';
+import '../widgets/error_retry.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Erreur de chargement : ${snapshot.error}'));
+              return ErrorRetry(onRetry: _refresh);
             }
             final articles = snapshot.data ?? [];
             if (articles.isEmpty) {

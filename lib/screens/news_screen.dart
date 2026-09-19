@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
 import 'article_detail_screen.dart';
+import '../widgets/error_retry.dart';
 
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -82,6 +83,9 @@ class _NewsScreenState extends State<NewsScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return ErrorRetry(onRetry: () => _selectCategory(_selected));
                 }
                 final articles = snapshot.data ?? [];
                 if (articles.isEmpty) {

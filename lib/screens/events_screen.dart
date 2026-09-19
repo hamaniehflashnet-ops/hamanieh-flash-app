@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
+import '../widgets/error_retry.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -68,6 +69,9 @@ class _EventsScreenState extends State<EventsScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return ErrorRetry(onRetry: () => _selectFilter(_selected));
                 }
                 final events = snapshot.data ?? [];
                 if (events.isEmpty) {

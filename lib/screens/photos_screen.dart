@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
+import '../widgets/error_retry.dart';
 
 class PhotosScreen extends StatefulWidget {
   const PhotosScreen({super.key});
@@ -73,6 +74,9 @@ class _PhotosScreenState extends State<PhotosScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return ErrorRetry(onRetry: () => _selectCategory(_selected));
                 }
                 final photos = snapshot.data ?? [];
                 if (photos.isEmpty) {

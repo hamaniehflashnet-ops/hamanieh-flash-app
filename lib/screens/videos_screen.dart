@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
+import '../widgets/error_retry.dart';
 
 class VideosScreen extends StatefulWidget {
   const VideosScreen({super.key});
@@ -21,6 +22,10 @@ class _VideosScreenState extends State<VideosScreen> {
   void initState() {
     super.initState();
     _videosFuture = ApiService.instance.getVideos();
+  }
+
+  void _reload() {
+    setState(() => _videosFuture = ApiService.instance.getVideos());
   }
 
   Future<void> _openVideo(VideoItem video) async {
@@ -40,6 +45,9 @@ class _VideosScreenState extends State<VideosScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return ErrorRetry(onRetry: _reload);
           }
           final videos = snapshot.data ?? [];
           return ListView(
