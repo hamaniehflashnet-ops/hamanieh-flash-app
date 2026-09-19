@@ -21,20 +21,22 @@ jobs:
 
       - run: flutter create --platforms=android --org net.hamaniehflash .
 
-      - name: Forcer Android SDK 36
+      - name: Ajouter la permission Internet (nécessaire en mode release)
         run: |
-          for f in android/app/build.gradle.kts android/app/build.gradle; do
-            if [ -f "$f" ]; then
-              sed -i -E 's/compileSdk[[:space:]]*=[[:space:]]*flutter\.compileSdkVersion/compileSdk = 36/' "$f"
-              sed -i -E 's/compileSdkVersion[[:space:]]+flutter\.compileSdkVersion/compileSdkVersion 36/' "$f"
-              sed -i -E 's/targetSdk[[:space:]]*=[[:space:]]*flutter\.targetSdkVersion/targetSdk = 36/' "$f"
-              sed -i -E 's/targetSdkVersion[[:space:]]+flutter\.targetSdkVersion/targetSdkVersion 36/' "$f"
-              echo "----- Contenu de $f après modification -----"
-              cat "$f"
-            fi
-          done
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i '/<manifest /a\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
+          echo "----- AndroidManifest.xml -----"
+          cat "$MANIFEST"
+          echo "--------------------------------"
+          if grep -q "android.permission.INTERNET" "$MANIFEST"; then
+            echo "✅ Permission INTERNET bien présente dans le manifeste."
+          else
+            echo "❌ ERREUR : la permission INTERNET est absente !"
+            exit 1
+          fi
 
       - run: flutter pub get
+      - run: dart run flutter_launcher_icons
       - run: flutter build apk --release
 
       - uses: actions/upload-artifact@v4
