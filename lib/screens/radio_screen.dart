@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -19,16 +18,6 @@ class _RadioScreenState extends State<RadioScreen> {
   bool _isLoading = false;
 
   @override
-  void initState() {
-    super.initState();
-    // Reflète l'état réel du lecteur (utile si la lecture est mise en pause
-    // depuis la notification plutôt que depuis l'app elle-même).
-    _player.playingStream.listen((playing) {
-      if (mounted) setState(() => _isPlaying = playing);
-    });
-  }
-
-  @override
   void dispose() {
     _player.dispose();
     super.dispose();
@@ -37,28 +26,18 @@ class _RadioScreenState extends State<RadioScreen> {
   Future<void> _togglePlay() async {
     if (_isPlaying) {
       await _player.pause();
-      return;
-    }
-    if (_player.audioSource != null) {
-      // Le flux est déjà chargé : on relance juste la lecture.
-      await _player.play();
+      setState(() => _isPlaying = false);
       return;
     }
     setState(() => _isLoading = true);
     try {
       final url = await ApiService.instance.getRadioStreamUrl();
-      await _player.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url),
-          tag: const MediaItem(
-            id: 'hamanieh-flash-radio',
-            title: 'Hamanieh Flash Radio',
-            artist: 'En direct — Votre radio, toute la journée',
-          ),
-        ),
-      );
+      await _player.setUrl(url);
       await _player.play();
-      setState(() => _isLoading = false);
+      setState(() {
+        _isPlaying = true;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -133,9 +112,7 @@ class _RadioScreenState extends State<RadioScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: naviguer vers la grille des programmes complète
-                    },
+                    onPressed: () {},
                     icon: const Icon(Icons.grid_view),
                     label: const Text('Grille des\nprogrammes', textAlign: TextAlign.center),
                   ),
