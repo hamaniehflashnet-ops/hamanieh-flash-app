@@ -21,17 +21,43 @@ jobs:
 
       - run: flutter create --platforms=android --org net.hamaniehflash .
 
-      - name: Ajouter la permission Internet (nécessaire en mode release)
+      - name: Configurer les permissions Android (Internet + lecture audio en arrière-plan)
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          sed -i '/<manifest /a\    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
+
+          # Permissions nécessaires (Internet + lecture audio en arrière-plan)
+          sed -i '/<manifest /a\
+    <uses-permission android:name="android.permission.INTERNET" />\
+    <uses-permission android:name="android.permission.WAKE_LOCK" />\
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />' "$MANIFEST"
+
+          # Service + récepteur requis par just_audio_background pour la notification
+          sed -i '/<\/application>/i\
+        <service android:name="com.ryanheise.audioservice.AudioService"\
+            android:foregroundServiceType="mediaPlayback"\
+            android:exported="true">\
+            <intent-filter>\
+                <action android:name="android.media.browse.MediaBrowserService" />\
+            </intent-filter>\
+        </service>\
+        <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"\
+            android:exported="true">\
+            <intent-filter>\
+                <action android:name="android.intent.action.MEDIA_BUTTON" />\
+            </intent-filter>\
+        </receiver>' "$MANIFEST"
+
+          # Réglages de sécurité de base
+          sed -i 's/android:label="hamanieh_flash"/android:label="hamanieh_flash"\n        android:allowBackup="false"\n        android:usesCleartextTraffic="false"/' "$MANIFEST"
+
           echo "----- AndroidManifest.xml -----"
           cat "$MANIFEST"
           echo "--------------------------------"
-          if grep -q "android.permission.INTERNET" "$MANIFEST"; then
-            echo "✅ Permission INTERNET bien présente dans le manifeste."
+          if grep -q "android.permission.INTERNET" "$MANIFEST" && grep -q "AudioService" "$MANIFEST"; then
+            echo "✅ Manifeste correctement configuré (Internet + audio en arrière-plan)."
           else
-            echo "❌ ERREUR : la permission INTERNET est absente !"
+            echo "❌ ERREUR : la configuration du manifeste a échoué !"
             exit 1
           fi
 
