@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
 import '../widgets/error_retry.dart';
+import '../utils/image_headers.dart';
 
 class VideosScreen extends StatefulWidget {
   const VideosScreen({super.key});
@@ -105,6 +106,7 @@ class _VideoTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: CachedNetworkImage(
                 imageUrl: video.thumbnailUrl, width: 90, height: 60, fit: BoxFit.cover,
+                httpHeaders: kImageHeaders,
                 errorWidget: (c, u, e) => Container(width: 90, height: 60, color: Colors.grey[300]),
               ),
             ),

@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
 import 'article_detail_screen.dart';
+import '../utils/image_headers.dart';
 import '../widgets/error_retry.dart';
 
 class NewsScreen extends StatefulWidget {
@@ -124,6 +125,7 @@ class _NewsCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: CachedNetworkImage(
                 imageUrl: article.imageUrl, width: 70, height: 70, fit: BoxFit.cover,
+                httpHeaders: kImageHeaders,
                 errorWidget: (c, u, e) => Container(width: 70, height: 70, color: Colors.grey[300]),
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/image_headers.dart';
 
 /// Écran de détail, ouvert avec l'article déjà connu (depuis une liste)
 /// puis complété via l'API pour récupérer le contenu complet (`content`).
@@ -51,6 +52,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               children: [
                 CachedNetworkImage(
                   imageUrl: article.imageUrl,
+                  httpHeaders: kImageHeaders,
                   height: 220,
                   width: double.infinity,
                   fit: BoxFit.cover,

@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
 import '../widgets/error_retry.dart';
+import '../utils/image_headers.dart';
 
 class PhotosScreen extends StatefulWidget {
   const PhotosScreen({super.key});
@@ -94,6 +95,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
                     borderRadius: BorderRadius.circular(10),
                     child: CachedNetworkImage(
                       imageUrl: photos[i].imageUrl,
+                      httpHeaders: kImageHeaders,
                       fit: BoxFit.cover,
                       errorWidget: (c, u, e) => Container(color: Colors.grey[300]),
                     ),

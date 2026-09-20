@@ -3,7 +3,7 @@ import '../theme/app_theme.dart';
 import '../screens/more_menu_screen.dart';
 import '../screens/notifications_screen.dart';
 
-/// AppBar réutilisée sur tous les écrans : menu ☰, logo, cloche 🔔
+/// AppBar réutilisée sur tous les écrans : menu ☰ (ou retour ←), logo, cloche 🔔
 class HFAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onNotificationTap;
 
@@ -11,14 +11,20 @@ class HFAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canPop = Navigator.canPop(context);
     return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.menu),
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const MoreMenuScreen()),
-        ),
-      ),
+      leading: canPop
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            )
+          : IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MoreMenuScreen()),
+              ),
+            ),
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
