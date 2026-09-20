@@ -15,8 +15,9 @@ dependencies:
   http: ^1.2.0
   dio: ^5.4.0
 
-  # Lecture audio (radio en direct)
+  # Lecture audio (radio en direct) + lecture en arrière-plan avec notification
   just_audio: ^0.9.36
+  just_audio_background: ^0.0.1-beta.13
 
   # Gestion d'état simple
   provider: ^6.1.1

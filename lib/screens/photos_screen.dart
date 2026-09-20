@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
 import '../widgets/error_retry.dart';
 import '../utils/image_headers.dart';
+import '../widgets/logo_fallback.dart';
 
 class PhotosScreen extends StatefulWidget {
   const PhotosScreen({super.key});
@@ -97,7 +98,7 @@ class _PhotosScreenState extends State<PhotosScreen> {
                       imageUrl: photos[i].imageUrl,
                       httpHeaders: kImageHeaders,
                       fit: BoxFit.cover,
-                      errorWidget: (c, u, e) => Container(color: Colors.grey[300]),
+                      errorWidget: (c, u, e) => const LogoFallback(),
                     ),
                   ),
                 );

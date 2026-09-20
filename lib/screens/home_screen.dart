@@ -8,6 +8,7 @@ import '../widgets/hf_app_bar.dart';
 import 'article_detail_screen.dart';
 import '../widgets/error_retry.dart';
 import '../utils/image_headers.dart';
+import '../widgets/logo_fallback.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -69,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 180,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        errorWidget: (c, u, e) => Container(height: 180, color: Colors.grey[300]),
+                        errorWidget: (c, u, e) => const LogoFallback(height: 180),
                       ),
                       Positioned(
                         left: 0, right: 0, bottom: 0,
@@ -133,7 +134,7 @@ class _ArticleTile extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: article.imageUrl, width: 70, height: 70, fit: BoxFit.cover,
                 httpHeaders: kImageHeaders,
-                errorWidget: (c, u, e) => Container(width: 70, height: 70, color: Colors.grey[300]),
+                errorWidget: (c, u, e) => const LogoFallback(width: 70, height: 70),
               ),
             ),
             const SizedBox(width: 12),

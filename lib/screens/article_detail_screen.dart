@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/image_headers.dart';
+import '../widgets/logo_fallback.dart';
 
 /// Écran de détail, ouvert avec l'article déjà connu (depuis une liste)
 /// puis complété via l'API pour récupérer le contenu complet (`content`).
@@ -56,7 +57,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   height: 220,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorWidget: (c, u, e) => Container(height: 220, color: Colors.grey[300]),
+                  errorWidget: (c, u, e) => const LogoFallback(height: 220),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),
