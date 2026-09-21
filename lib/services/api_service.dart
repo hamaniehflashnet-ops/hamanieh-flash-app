@@ -52,10 +52,10 @@ class ApiService {
   }
 
   // ---- Radio ----
-  Future<String> getRadioStreamUrl() {
+  Future<String?> getRadioStreamUrl() {
     return _withRetry(() async {
       final res = await _dio.get('/radio.php', queryParameters: {'action': 'stream-url'});
-      return res.data['url'];
+      return res.data['url'] as String?;
     });
   }
 

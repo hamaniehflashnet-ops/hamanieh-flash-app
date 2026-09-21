@@ -54,7 +54,12 @@ class _RadioScreenState extends State<RadioScreen> {
     setState(() => _isLoading = true);
     try {
       final url = await ApiService.instance.getRadioStreamUrl();
-      await _player.setUrl(url);
+      if (url == null || url.isEmpty) {
+        throw Exception(
+          "Aucune URL de flux configurée (réglage 'radio_stream_url' vide dans le back-office).",
+        );
+      }
+      await _player.setUrl(url).timeout(const Duration(seconds: 15));
       await _player.play();
       setState(() {
         _isPlaying = true;
@@ -62,6 +67,7 @@ class _RadioScreenState extends State<RadioScreen> {
       });
       _loadNowPlaying();
     } catch (e) {
+      await _player.stop();
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
