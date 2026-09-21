@@ -66,6 +66,15 @@ class ApiService {
     });
   }
 
+  /// Renvoie le nom de l'émission en cours de diffusion, ou null si aucune
+  /// n'est programmée à cette heure.
+  Future<String?> getNowPlaying() {
+    return _withRetry(() async {
+      final res = await _dio.get('/radio.php', queryParameters: {'action': 'now-playing'});
+      return res.data['title'] as String?;
+    });
+  }
+
   // ---- Vidéos / TV ----
   Future<List<VideoItem>> getVideos() {
     return _withRetry(() async {

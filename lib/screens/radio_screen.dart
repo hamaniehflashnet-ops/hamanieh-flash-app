@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
+import 'radio_schedule_screen.dart';
 
 class RadioScreen extends StatefulWidget {
   const RadioScreen({super.key});
@@ -16,6 +17,24 @@ class _RadioScreenState extends State<RadioScreen> {
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
   bool _isLoading = false;
+  double _volume = 0.8;
+  String? _nowPlaying;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.setVolume(_volume);
+    _loadNowPlaying();
+  }
+
+  Future<void> _loadNowPlaying() async {
+    try {
+      final title = await ApiService.instance.getNowPlaying();
+      if (mounted) setState(() => _nowPlaying = title);
+    } catch (_) {
+      // Silencieux : ce n'est qu'une info d'ambiance, pas bloquant.
+    }
+  }
 
   @override
   void dispose() {
@@ -25,7 +44,10 @@ class _RadioScreenState extends State<RadioScreen> {
 
   Future<void> _togglePlay() async {
     if (_isPlaying) {
-      await _player.pause();
+      // stop() plutôt que pause() : pour un flux radio en direct, pause()
+      // laisse parfois l'audio déjà mis en mémoire tampon continuer à jouer
+      // quelques secondes. stop() coupe immédiatement.
+      await _player.stop();
       setState(() => _isPlaying = false);
       return;
     }
@@ -38,6 +60,7 @@ class _RadioScreenState extends State<RadioScreen> {
         _isPlaying = true;
         _isLoading = false;
       });
+      _loadNowPlaying();
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -51,86 +74,148 @@ class _RadioScreenState extends State<RadioScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: const HFAppBar(),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.primaryBlue,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 8, height: 8,
-                        decoration: const BoxDecoration(color: AppColors.accentRed, shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text('EN DIRECT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      const Spacer(),
-                      const Text('24h/24', style: TextStyle(color: Colors.white70)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const Icon(Icons.mic, color: Colors.white, size: 64),
-                  const SizedBox(height: 24),
-                  GestureDetector(
-                    onTap: _isLoading ? null : _togglePlay,
-                    child: Container(
-                      width: 72, height: 72,
-                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                      child: _isLoading
-                          ? const Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())
-                          : Icon(_isPlaying ? Icons.pause : Icons.play_arrow,
-                              size: 40, color: AppColors.primaryBlue),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Hamanieh Flash Radio',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const Text('Votre radio, toute la journée', style: TextStyle(color: Colors.white70)),
-                ],
-              ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Bandeau logo + LIVE, façon site web
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 28),
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlue,
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 20),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.article, color: AppColors.secondaryBlue),
-                title: const Text('En ce moment'),
-                subtitle: const Text('Journal des nouvelles'),
-                trailing: const Icon(Icons.volume_up),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.grid_view),
-                    label: const Text('Grille des\nprogrammes', textAlign: TextAlign.center),
-                  ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset('assets/images/logo.jpg', width: 220, fit: BoxFit.contain),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Share.share('Écoutez Hamanieh Flash Radio en direct ! https://hamanieh-flash.net');
-                    },
-                    icon: const Icon(Icons.share),
-                    label: const Text('Partager'),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentRed,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.circle, size: 8, color: Colors.white),
+                      SizedBox(width: 6),
+                      Text('LIVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+
+          // Carte de lecture
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4))],
+            ),
+            child: Column(
+              children: [
+                const Text("L'actualité sous un autre angle !!!",
+                    style: TextStyle(fontStyle: FontStyle.italic, color: AppColors.textGrey)),
+                const SizedBox(height: 4),
+                const Text('Hamanieh Flash Radio',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.circle, size: 10, color: AppColors.liveGreen),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.circle, size: 10, color: AppColors.accentRed),
+                    const SizedBox(width: 8),
+                    Text(_nowPlaying ?? 'EN DIRECT',
+                        style: const TextStyle(color: AppColors.textGrey, letterSpacing: 1)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Bouton lecture / stop, pleine largeur
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _togglePlay,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isPlaying ? AppColors.accentRed : AppColors.primaryBlue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    ),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 20, height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Icon(_isPlaying ? Icons.stop : Icons.play_arrow, color: Colors.white),
+                    label: Text(
+                      _isPlaying ? 'STOP' : 'ÉCOUTER',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Volume
+                Row(
+                  children: [
+                    Icon(_volume == 0 ? Icons.volume_off : Icons.volume_up, color: AppColors.textGrey),
+                    Expanded(
+                      child: Slider(
+                        value: _volume,
+                        activeColor: AppColors.primaryBlue,
+                        onChanged: (v) {
+                          setState(() => _volume = v);
+                          _player.setVolume(v);
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: 42,
+                      child: Text('${(_volume * 100).round()}%', style: const TextStyle(color: AppColors.textGrey)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RadioScheduleScreen()),
+                  ),
+                  icon: const Icon(Icons.grid_view),
+                  label: const Text('Grille des\nprogrammes', textAlign: TextAlign.center),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Share.share('Écoutez Hamanieh Flash Radio en direct ! https://hamanieh-flash.net');
+                  },
+                  icon: const Icon(Icons.share),
+                  label: const Text('Partager'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
