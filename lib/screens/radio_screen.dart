@@ -59,7 +59,21 @@ class _RadioScreenState extends State<RadioScreen> {
           "Aucune URL de flux configurée (réglage 'radio_stream_url' vide dans le back-office).",
         );
       }
-      await _player.setUrl(url).timeout(const Duration(seconds: 15));
+      // Astuce pour les vieux serveurs Shoutcast v1 (comme celui-ci) : le
+      // lecteur audio d'Android reste parfois bloqué avec "http(s)://" car
+      // ce type de serveur répond "ICY 200 OK" au lieu de "HTTP/1.1 200 OK".
+      // Le préfixe "icy://" indique au lecteur de gérer ce cas correctement.
+      final icyUrl = url.replaceFirst(RegExp(r'^https?://'), 'icy://');
+      try {
+        await _player
+            .setUrl(icyUrl, headers: {'Icy-MetaData': '0'})
+            .timeout(const Duration(seconds: 10));
+      } catch (_) {
+        // Repli : on retente avec l'adresse normale si "icy://" ne fonctionne pas.
+        await _player
+            .setUrl(url, headers: {'Icy-MetaData': '0'})
+            .timeout(const Duration(seconds: 10));
+      }
       await _player.play();
       setState(() {
         _isPlaying = true;
