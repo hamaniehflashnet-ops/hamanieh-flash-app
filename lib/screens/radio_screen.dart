@@ -68,7 +68,14 @@ class _RadioScreenState extends State<RadioScreen> {
             'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36',
         'Referer': 'https://ecmanager5.pro-fhi.net:2860/',
       };
-      await _player.setUrl(url, headers: headers).timeout(const Duration(seconds: 15));
+      try {
+        await _player.setUrl(url, headers: headers).timeout(const Duration(seconds: 10));
+      } catch (_) {
+        // Repli : on tente la version non sécurisée (http au lieu de https),
+        // au cas où le certificat de sécurité du serveur poserait souci.
+        final httpUrl = url.replaceFirst('https://', 'http://');
+        await _player.setUrl(httpUrl, headers: headers).timeout(const Duration(seconds: 10));
+      }
       await _player.play();
       setState(() {
         _isPlaying = true;
