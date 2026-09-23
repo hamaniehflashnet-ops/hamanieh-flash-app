@@ -42,15 +42,16 @@ class _RadioScreenState extends State<RadioScreen> {
     super.dispose();
   }
 
-  Future<void> _togglePlay() async {
-    if (_isPlaying) {
-      // stop() plutôt que pause() : pour un flux radio en direct, pause()
-      // laisse parfois l'audio déjà mis en mémoire tampon continuer à jouer
-      // quelques secondes. stop() coupe immédiatement.
-      await _player.stop();
-      setState(() => _isPlaying = false);
-      return;
-    }
+  Future<void> _stop() async {
+    // stop() plutôt que pause() : pour un flux radio en direct, pause()
+    // laisse parfois l'audio déjà mis en mémoire tampon continuer à jouer
+    // quelques secondes. stop() coupe immédiatement.
+    await _player.stop();
+    if (mounted) setState(() => _isPlaying = false);
+  }
+
+  Future<void> _play() async {
+    if (_isPlaying || _isLoading) return;
     setState(() => _isLoading = true);
     try {
       final url = await ApiService.instance.getRadioStreamUrl();
@@ -59,21 +60,15 @@ class _RadioScreenState extends State<RadioScreen> {
           "Aucune URL de flux configurée (réglage 'radio_stream_url' vide dans le back-office).",
         );
       }
-      // Astuce pour les vieux serveurs Shoutcast v1 (comme celui-ci) : le
-      // lecteur audio d'Android reste parfois bloqué avec "http(s)://" car
-      // ce type de serveur répond "ICY 200 OK" au lieu de "HTTP/1.1 200 OK".
-      // Le préfixe "icy://" indique au lecteur de gérer ce cas correctement.
-      final icyUrl = url.replaceFirst(RegExp(r'^https?://'), 'icy://');
-      try {
-        await _player
-            .setUrl(icyUrl, headers: {'Icy-MetaData': '0'})
-            .timeout(const Duration(seconds: 10));
-      } catch (_) {
-        // Repli : on retente avec l'adresse normale si "icy://" ne fonctionne pas.
-        await _player
-            .setUrl(url, headers: {'Icy-MetaData': '0'})
-            .timeout(const Duration(seconds: 10));
-      }
+      // Certains serveurs de streaming vérifient l'origine de la demande
+      // (comme un vrai navigateur) avant d'autoriser l'écoute.
+      final headers = {
+        'Icy-MetaData': '0',
+        'User-Agent':
+            'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36',
+        'Referer': 'https://ecmanager5.pro-fhi.net:2860/',
+      };
+      await _player.setUrl(url, headers: headers).timeout(const Duration(seconds: 15));
       await _player.play();
       setState(() {
         _isPlaying = true;
@@ -162,27 +157,52 @@ class _RadioScreenState extends State<RadioScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Bouton lecture / stop, pleine largeur
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _togglePlay,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isPlaying ? AppColors.accentRed : AppColors.primaryBlue,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                // Deux boutons distincts : Lire et Arrêter
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          onPressed: (_isLoading || _isPlaying) ? null : _play,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                            disabledBackgroundColor: AppColors.primaryBlue.withOpacity(0.4),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 20, height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.play_arrow, color: Colors.white),
+                          label: const Text(
+                            'LIRE',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1),
+                          ),
+                        ),
+                      ),
                     ),
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20, height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : Icon(_isPlaying ? Icons.stop : Icons.play_arrow, color: Colors.white),
-                    label: Text(
-                      _isPlaying ? 'STOP' : 'ÉCOUTER',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          onPressed: (_isPlaying && !_isLoading) ? _stop : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentRed,
+                            disabledBackgroundColor: AppColors.accentRed.withOpacity(0.4),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                          icon: const Icon(Icons.stop, color: Colors.white),
+                          label: const Text(
+                            'ARRÊTER',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 
