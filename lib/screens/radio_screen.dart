@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
@@ -44,6 +45,27 @@ class _RadioScreenState extends State<RadioScreen> {
           },
         ),
       );
+    // Sans ça, la WebView Android refuse silencieusement de jouer un son
+    // déclenché par du code Dart (elle exige un vrai tap sur le lecteur
+    // lui-même, à l'intérieur de la page web, sinon play() est ignoré).
+    final androidController = _controller.platform;
+    if (androidController is AndroidWebViewController) {
+      androidController.setMediaPlaybackRequiresUserGesture(false);
+    }
+    _controller.addJavaScriptChannel(
+      'AudioError',
+      onMessageReceived: (message) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Impossible de démarrer la radio : ${message.message}')),
+          );
+        }
+      },
+    );
     _loadNowPlaying();
     _initStream();
   }
@@ -62,7 +84,8 @@ class _RadioScreenState extends State<RadioScreen> {
 <!DOCTYPE html>
 <html>
 <body style="margin:0;background:#000;">
-  <audio id="player" src="${_streamUrl!.replaceAll('"', '&quot;')}" preload="none"></audio>
+  <audio id="player" src="${_streamUrl!.replaceAll('"', '&quot;')}" preload="none"
+    onerror="AudioError.postMessage('Erreur de chargement du flux (code ' + (this.error ? this.error.code : '?') + ')')"></audio>
 </body>
 </html>
 ''';
@@ -96,7 +119,10 @@ class _RadioScreenState extends State<RadioScreen> {
         await _initStream();
         await Future.delayed(const Duration(milliseconds: 400));
       }
-      await _controller.runJavaScript("document.getElementById('player').play();");
+      await _controller.runJavaScript(
+        "var p = document.getElementById('player');"
+        "p.play().catch(function(e) { AudioError.postMessage(e.message || e.toString()); });",
+      );
       setState(() {
         _isPlaying = true;
         _isLoading = false;

@@ -23,6 +23,7 @@ dependencies:
 
   # Lecture audio (radio en direct)
   webview_flutter: ^4.8.0
+  webview_flutter_android: ^4.0.0
 
   # Gestion d'état simple
   provider: ^6.1.1
