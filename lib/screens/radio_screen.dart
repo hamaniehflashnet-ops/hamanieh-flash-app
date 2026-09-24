@@ -66,15 +66,25 @@ class _RadioScreenState extends State<RadioScreen> {
         'Icy-MetaData': '0',
         'User-Agent':
             'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36',
-        'Referer': 'https://ecmanager5.pro-fhi.net:2860/',
+        'Referer': 'http://ecmanager5.pro-fhi.net:2870/',
       };
       try {
         await _player.setUrl(url, headers: headers).timeout(const Duration(seconds: 10));
       } catch (_) {
-        // Repli : on tente la version non sécurisée (http au lieu de https),
-        // au cas où le certificat de sécurité du serveur poserait souci.
-        final httpUrl = url.replaceFirst('https://', 'http://');
-        await _player.setUrl(httpUrl, headers: headers).timeout(const Duration(seconds: 10));
+        // Repli 1 : on tente en inversant http/https, au cas où le
+        // certificat de sécurité du serveur poserait souci.
+        try {
+          final swappedUrl = url.startsWith('https://')
+              ? url.replaceFirst('https://', 'http://')
+              : url.replaceFirst('http://', 'https://');
+          await _player.setUrl(swappedUrl, headers: headers).timeout(const Duration(seconds: 10));
+        } catch (_) {
+          // Repli 2 : URL de secours connue du serveur de streaming,
+          // au cas où le réglage 'radio_stream_url' du back-office serait
+          // erroné (mauvais port, page HTML au lieu du flux brut, etc.).
+          const fallbackUrl = 'http://ecmanager5.pro-fhi.net:2870/;?type=http';
+          await _player.setUrl(fallbackUrl, headers: headers).timeout(const Duration(seconds: 10));
+        }
       }
       await _player.play();
       setState(() {

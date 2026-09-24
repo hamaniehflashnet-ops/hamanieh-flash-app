@@ -52,11 +52,26 @@ class ApiService {
   }
 
   // ---- Radio ----
-  Future<String?> getRadioStreamUrl() {
-    return _withRetry(() async {
-      final res = await _dio.get('/radio.php', queryParameters: {'action': 'stream-url'});
-      return res.data['url'] as String?;
-    });
+  // URL d'écoute directe du flux Shoutcast (port 2870, type=http = flux MP3
+  // brut, pas une page ou une playlist). Sert de secours si le réglage
+  // 'radio_stream_url' du back-office est vide, mal renseigné, ou si le
+  // serveur hamanieh-flash.net est momentanément injoignable.
+  static const String _fallbackStreamUrl =
+      'http://ecmanager5.pro-fhi.net:2870/;?type=http';
+
+  Future<String?> getRadioStreamUrl() async {
+    try {
+      final url = await _withRetry(() async {
+        final res = await _dio.get('/radio.php', queryParameters: {'action': 'stream-url'});
+        return res.data['url'] as String?;
+      });
+      if (url == null || url.trim().isEmpty) return _fallbackStreamUrl;
+      return url;
+    } catch (_) {
+      // Le back-office est injoignable : on retombe sur l'URL connue du
+      // serveur de streaming plutôt que d'empêcher toute écoute.
+      return _fallbackStreamUrl;
+    }
   }
 
   Future<List<RadioProgram>> getRadioSchedule() {

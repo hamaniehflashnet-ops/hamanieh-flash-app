@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "685700913742",
+    "project_id": "hamanieh-flash",
+    "storage_bucket": "hamanieh-flash.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:685700913742:android:664c2b811d3575d2bb811f",
+        "android_client_info": {
+          "package_name": "net.hamaniehflash.hamanieh_flash"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4KMqyWQP8rKP5oy3FNkz6IhFDHvACf4c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -64,10 +64,46 @@ Côté app, `lib/services/api_service.dart` pointe déjà vers
 1. Adapter et mettre en ligne les scripts PHP de `hamanieh_flash_api/`.
 2. Tester chaque écran une fois les endpoints en ligne (Accueil, Actualités,
    Radio, Vidéos, Événements, Photos).
-3. Configurer Firebase Cloud Messaging pour les notifications push réelles.
+3. ~~Configurer Firebase Cloud Messaging pour les notifications push réelles.~~
+   Fait — voir la section "Notifications push (Firebase)" ci-dessous.
 4. Ajouter votre logo réel dans `assets/images/` et sur le splash screen
    (`lib/screens/splash_screen.dart`), et configurer l'icône de l'app.
 5. Tester sur iOS et Android (`flutter run`).
+
+## 📻 Radio en direct
+
+`api_service.dart` appelle `https://hamanieh-flash.net/api/radio.php?action=stream-url`,
+qui doit renvoyer `{"url": "..."}` avec l'URL d'écoute directe de votre
+serveur Shoutcast — **pas** un lien WindowsMedia/Winamp/WebPlayer, mais le
+flux MP3 brut (type=http), du style :
+`http://ecmanager5.pro-fhi.net:2870/;?type=http`
+
+Si ce réglage est vide ou erroné côté back-office, l'appli retombe
+automatiquement sur cette même URL codée en dur dans `api_service.dart`
+(variable `_fallbackStreamUrl`) et dans `radio_screen.dart`, pour ne jamais
+bloquer complètement l'écoute — pensez à la mettre à jour si votre
+hébergeur de streaming change.
+
+## 🔔 Notifications push (Firebase)
+
+L'appli est câblée pour Firebase Cloud Messaging (`lib/services/notification_service.dart`),
+mais a besoin de votre propre projet Firebase pour fonctionner :
+
+1. Créez un projet sur https://console.firebase.google.com
+2. Ajoutez une appli Android avec le package `net.hamaniehflash.hamanieh_flash`
+   (celui généré par `flutter create --org net.hamaniehflash .` dans le workflow CI)
+3. Téléchargez le fichier `google-services.json` et déposez-le **à la racine
+   du dépôt**, à côté de `pubspec.yaml` — le script `patch_manifest.py` le
+   copie automatiquement au bon endroit pendant le build et active le
+   plugin Gradle nécessaire. Sans ce fichier, l'appli se construit et
+   fonctionne quand même, simplement sans notifications push.
+4. Toutes les installations de l'appli s'abonnent automatiquement au topic
+   FCM `all_users`. Pour envoyer une notification à tout le monde, depuis
+   la console Firebase : Engagement → Messaging → Nouvelle campagne →
+   ciblez le topic `all_users` (pas besoin de gérer les tokens par appareil).
+5. Les notifications reçues sont affichées immédiatement si l'appli est
+   ouverte, et conservées dans un historique local (visible dans l'onglet
+   Notifications) même après redémarrage du téléphone.
 
 ## Écrans ajoutés récemment
 
