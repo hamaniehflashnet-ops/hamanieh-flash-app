@@ -52,6 +52,32 @@ else:
     print("ERREUR: la configuration du manifeste a echoue.")
     sys.exit(1)
 
+# ---- Core library desugaring ----
+# flutter_local_notifications exige ce parametre pour compiler en mode
+# release, sinon Gradle echoue avec "requires core library desugaring".
+app_gradle_path = "android/app/build.gradle.kts"
+if os.path.exists(app_gradle_path):
+    with open(app_gradle_path, "r", encoding="utf-8") as f:
+        ag = f.read()
+
+    if "isCoreLibraryDesugaringEnabled" not in ag:
+        ag = ag.replace(
+            "compileOptions {",
+            "compileOptions {\n        isCoreLibraryDesugaringEnabled = true",
+            1,
+        )
+
+    if "coreLibraryDesugaring" not in ag:
+        ag += (
+            "\n\ndependencies {\n"
+            '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n'
+            "}\n"
+        )
+
+    with open(app_gradle_path, "w", encoding="utf-8") as f:
+        f.write(ag)
+    print("Core library desugaring active dans android/app/build.gradle.kts.")
+
 # ---- Firebase Cloud Messaging (notifications push) ----
 # google-services.json doit etre depose a la racine du depot (a cote de
 # pubspec.yaml) : il est copie ici au bon endroit pour que le plugin
