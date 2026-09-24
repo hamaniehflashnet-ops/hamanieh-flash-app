@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hf_app_bar.dart';
 import 'radio_schedule_screen.dart';
 
+/// Lecture de la radio via une page HTML jouée dans une WebView plutôt que
+/// via un lecteur audio natif (just_audio/ExoPlayer). Les flux Shoutcast de
+/// ce serveur (statut "ICY 200 OK" non standard, redirections) posent
+/// souvent problème à ExoPlayer alors qu'ils se lisent sans souci dans un
+/// vrai navigateur (Chrome) — la WebView utilise le même moteur, donc le
+/// même comportement fiable.
 class RadioScreen extends StatefulWidget {
   const RadioScreen({super.key});
 
@@ -14,17 +20,53 @@ class RadioScreen extends StatefulWidget {
 }
 
 class _RadioScreenState extends State<RadioScreen> {
-  final AudioPlayer _player = AudioPlayer();
+  static const String _fallbackStreamUrl =
+      'http://ecmanager5.pro-fhi.net:2870/;?type=http';
+
+  late final WebViewController _controller;
   bool _isPlaying = false;
   bool _isLoading = false;
+  bool _pageReady = false;
   double _volume = 0.8;
   String? _nowPlaying;
+  String? _streamUrl;
 
   @override
   void initState() {
     super.initState();
-    _player.setVolume(_volume);
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (_) {
+            _pageReady = true;
+            _setJsVolume(_volume);
+          },
+        ),
+      );
     _loadNowPlaying();
+    _initStream();
+  }
+
+  Future<void> _initStream() async {
+    String? url;
+    try {
+      url = await ApiService.instance.getRadioStreamUrl();
+    } catch (_) {
+      // ignoré : on retombe sur l'URL de secours ci-dessous.
+    }
+    _streamUrl = (url == null || url.trim().isEmpty) ? _fallbackStreamUrl : url;
+
+    final html =
+        '''
+<!DOCTYPE html>
+<html>
+<body style="margin:0;background:#000;">
+  <audio id="player" src="${_streamUrl!.replaceAll('"', '&quot;')}" preload="none"></audio>
+</body>
+</html>
+''';
+    await _controller.loadHtmlString(html);
   }
 
   Future<void> _loadNowPlaying() async {
@@ -36,64 +78,31 @@ class _RadioScreenState extends State<RadioScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _player.dispose();
-    super.dispose();
-  }
-
-  Future<void> _stop() async {
-    // stop() plutôt que pause() : pour un flux radio en direct, pause()
-    // laisse parfois l'audio déjà mis en mémoire tampon continuer à jouer
-    // quelques secondes. stop() coupe immédiatement.
-    await _player.stop();
-    if (mounted) setState(() => _isPlaying = false);
+  Future<void> _setJsVolume(double v) async {
+    if (!_pageReady) return;
+    try {
+      await _controller.runJavaScript(
+        "document.getElementById('player').volume = $v;",
+      );
+    } catch (_) {}
   }
 
   Future<void> _play() async {
     if (_isPlaying || _isLoading) return;
     setState(() => _isLoading = true);
     try {
-      final url = await ApiService.instance.getRadioStreamUrl();
-      if (url == null || url.isEmpty) {
-        throw Exception(
-          "Aucune URL de flux configurée (réglage 'radio_stream_url' vide dans le back-office).",
-        );
+      if (!_pageReady) {
+        // La page HTML n'a pas fini de charger : on réessaie l'init une fois.
+        await _initStream();
+        await Future.delayed(const Duration(milliseconds: 400));
       }
-      // Certains serveurs de streaming vérifient l'origine de la demande
-      // (comme un vrai navigateur) avant d'autoriser l'écoute.
-      final headers = {
-        'Icy-MetaData': '0',
-        'User-Agent':
-            'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36',
-        'Referer': 'http://ecmanager5.pro-fhi.net:2870/',
-      };
-      try {
-        await _player.setUrl(url, headers: headers).timeout(const Duration(seconds: 10));
-      } catch (_) {
-        // Repli 1 : on tente en inversant http/https, au cas où le
-        // certificat de sécurité du serveur poserait souci.
-        try {
-          final swappedUrl = url.startsWith('https://')
-              ? url.replaceFirst('https://', 'http://')
-              : url.replaceFirst('http://', 'https://');
-          await _player.setUrl(swappedUrl, headers: headers).timeout(const Duration(seconds: 10));
-        } catch (_) {
-          // Repli 2 : URL de secours connue du serveur de streaming,
-          // au cas où le réglage 'radio_stream_url' du back-office serait
-          // erroné (mauvais port, page HTML au lieu du flux brut, etc.).
-          const fallbackUrl = 'http://ecmanager5.pro-fhi.net:2870/;?type=http';
-          await _player.setUrl(fallbackUrl, headers: headers).timeout(const Duration(seconds: 10));
-        }
-      }
-      await _player.play();
+      await _controller.runJavaScript("document.getElementById('player').play();");
       setState(() {
         _isPlaying = true;
         _isLoading = false;
       });
       _loadNowPlaying();
     } catch (e) {
-      await _player.stop();
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -101,6 +110,23 @@ class _RadioScreenState extends State<RadioScreen> {
         );
       }
     }
+  }
+
+  Future<void> _stop() async {
+    // On coupe le flux (pause + retour à 0) plutôt qu'une simple pause :
+    // pour une radio en direct, une pause laisse parfois l'audio déjà
+    // mis en mémoire tampon continuer quelques secondes.
+    try {
+      await _controller.runJavaScript(
+        "var p = document.getElementById('player'); p.pause(); p.currentTime = 0;",
+      );
+    } catch (_) {}
+    if (mounted) setState(() => _isPlaying = false);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -111,6 +137,14 @@ class _RadioScreenState extends State<RadioScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // WebView invisible (1x1) : elle ne sert qu'à faire jouer l'audio
+          // avec le même moteur que Chrome, elle n'affiche rien à l'écran.
+          SizedBox(
+            width: 1,
+            height: 1,
+            child: WebViewWidget(controller: _controller),
+          ),
+
           // Bandeau logo + LIVE, façon site web
           Container(
             padding: const EdgeInsets.symmetric(vertical: 28),
@@ -233,7 +267,7 @@ class _RadioScreenState extends State<RadioScreen> {
                         activeColor: AppColors.primaryBlue,
                         onChanged: (v) {
                           setState(() => _volume = v);
-                          _player.setVolume(v);
+                          _setJsVolume(v);
                         },
                       ),
                     ),

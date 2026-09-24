@@ -22,7 +22,7 @@ dependencies:
   shared_preferences: ^2.3.2
 
   # Lecture audio (radio en direct)
-  just_audio: ^0.9.36
+  webview_flutter: ^4.8.0
 
   # Gestion d'état simple
   provider: ^6.1.1
